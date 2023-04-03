@@ -1,0 +1,8 @@
+1680495437026:cd build/libs
+1680495438688:ls
+1680495464358:run file.txt -o output.txt
+1680496141144:run inputfile.txt
+1680496225533:login database --username admin --password
+1680509979020:login database --username hello password
+1680509994664:login database --username hello --password
+1680510034617:login database -u admin -p
