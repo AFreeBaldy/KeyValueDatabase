@@ -1,6 +1,8 @@
 package com.laudwilliam.keyvaluedatabase.client.cli;
 
-import com.laudwilliam.keyvaluedatabase.client.http.HttpClient;
+import com.laudwilliam.keyvaluedatabase.client.Client;
+import com.laudwilliam.keyvaluedatabase.client.language.QueryCommands;
+import com.laudwilliam.keyvaluedatabase.client.utils.FileManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.ShellComponent;
@@ -9,18 +11,27 @@ import org.springframework.shell.standard.ShellMethodAvailability;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.util.StringUtils;
 
-import java.io.Console;
-
 @ShellComponent
 public class Commands {
+    private final ConsoleService consoleService;
+    private final Client client;
+    private final FileManager fileManger;
     private boolean loggedIn;
-    private final HttpClient httpClient;
 
     @Autowired
-    public Commands(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public Commands(ConsoleService consoleService, Client client, FileManager fileManager) {
+        this.fileManger = fileManager;
+        this.consoleService = consoleService;
+        this.client = client;
     }
 
+    public boolean isLoggedIn() {
+        return loggedIn;
+    }
+
+    public void setLoggedIn(boolean loggedIn) {
+        this.loggedIn = loggedIn;
+    }
 
     @ShellMethod("login")
     public String login(
@@ -28,25 +39,20 @@ public class Commands {
             @ShellOption(value = {"-u", "--username"}) String username,
             @ShellOption(value = {"-p", "--password"}, defaultValue = "false") boolean password
     ) {
+        if (!StringUtils.hasText(databaseName) || !StringUtils.hasText(username))
+            return "Please enter a valid command";
         if (password) {
             boolean isValid = false;
             String pass;
             do {
-                Console console = System.console();
-                if (console == null) {
-                    System.err.println("No console.");
-                    System.exit(1);
-                }
-                char[] passwordArray = console.readPassword("Enter your password: ");
-                pass = String.copyValueOf(passwordArray);
+                pass = consoleService.getPassword();
                 if (StringUtils.hasText(pass))
                     isValid = true;
                 else {
                     System.out.println("Enter a valid password: ");
                 }
             } while (!isValid);
-            if (httpClient.login(username, pass))
-            {
+            if (client.login(username, pass)) {
                 loggedIn = true;
                 return "Successfully logged in";
             }
@@ -63,12 +69,34 @@ public class Commands {
     }
 
     @ShellMethod("query")
-    public void query(
+    public String query(
             String queryName,
             String key,
-            @ShellOption(value = {}, defaultValue = "") String value
+            @ShellOption(defaultValue = "") String value
     ) {
-        System.out.println(queryName + " " + key + " " + value);
+        if (!StringUtils.hasText(queryName) || !StringUtils.hasText(key))
+            return "Please enter a valid command";
+        QueryCommands queryCommands;
+        try {
+            queryCommands = QueryCommands.valueOf(queryName);
+        } catch (IllegalArgumentException exception) {
+            return String.format("The query '%s' does not exist, type --help to get list of commands", queryName);
+        }
+        switch (queryCommands) {
+            case DEL -> {
+                if (StringUtils.hasText(value))
+                    return "Value option is only available for the [SET] command";
+                return client.delete(key);
+            }
+            case SET -> {return client.set(key, value);}
+            case GET -> {
+                if (StringUtils.hasText(value))
+                    return "Value option is only available for the [SET] command";return client.get(key);
+            }
+            default -> {
+                return "SUCCESS";
+            }
+        }
     }
 
     @ShellMethodAvailability({"query", "run"})
@@ -83,8 +111,15 @@ public class Commands {
             String inputFilePath,
             @ShellOption(value = {"-o", "--output-file"}, defaultValue = "") String outputFilePath
     ) {
+        if (!StringUtils.hasText(inputFilePath))
+            return "Please enter a valid command";
+        boolean isInput = fileManger.isFile(inputFilePath);
+        if (StringUtils.hasText(outputFilePath) && fileManger.isFile(outputFilePath))
+            return "Output file already exist";
+        if (StringUtils.hasText(outputFilePath))
+            return client.processCommands(fileManger.getFile(inputFilePath), fileManger.getFile(outputFilePath));
 
-        return String.format("Input file path: %s  \nOutput file path%s", inputFilePath, outputFilePath);
+        return client.processCommands(fileManger.getFile(inputFilePath));
     }
 
 
