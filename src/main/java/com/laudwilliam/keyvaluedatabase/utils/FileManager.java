@@ -1,4 +1,4 @@
-package com.laudwilliam.keyvaluedatabase.client.utils;
+package com.laudwilliam.keyvaluedatabase.utils;
 
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;

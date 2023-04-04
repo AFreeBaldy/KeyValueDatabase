@@ -1,7 +1,7 @@
 package com.laudwilliam.keyvaluedatabase.client.cli;
 
 import com.laudwilliam.keyvaluedatabase.client.Client;
-import com.laudwilliam.keyvaluedatabase.client.utils.FileManager;
+import com.laudwilliam.keyvaluedatabase.utils.FileManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -156,24 +156,57 @@ class CommandsTest {
 
     }
 
+    @Test
     void testValidRun() {
         // Given
         String response;
         commands.setLoggedIn(true);
         when(fileManager.isFile(anyString())).thenReturn(true);
         when(fileManager.getFile(anyString())).thenReturn(new File("file.text"));
+        when(client.processCommands(any())).thenReturn("SUCCESS");
+        when(client.processCommands(any(), any())).thenReturn("SUCCESS");
+        when(fileManager.isFile("output.txt")).thenReturn(false);
 
         // When
         response = commands.run("file.txt", "");
+        // Then
+        assertThat(response).isEqualTo("SUCCESS");
+
+        // When
+        response = commands.run("file.txt", "output.txt");
+        // Then
+        assertThat(response).isEqualTo("SUCCESS");
 
     }
 
+    @Test
     void testInvalidRun() {
+        // Given
+        String response;
+        commands.setLoggedIn(true);
+        when(fileManager.isFile(anyString())).thenReturn(true);
+        when(fileManager.getFile(anyString())).thenReturn(new File("file.text"));
+        when(client.processCommands(any())).thenReturn("SUCCESS");
+        when(client.processCommands(any(), any())).thenReturn("SUCCESS");
+        when(fileManager.isFile("output.txt")).thenReturn(true);
 
+        // When
+        response = commands.run("", "");
+        // Then
+        assertThat(response).isEqualTo("Please enter a valid command");
+
+        // When
+        response = commands.run("file.txt", "output.txt");
+        // Then
+        assertThat(response).isEqualTo("Output file already exist");
+
+        // Given
+        when(fileManager.isFile("file.txt")).thenReturn(false);
+        // When
+        response = commands.run("file.txt", "");
+        // Then
+        assertThat(response).isEqualTo(String.format("File not found %s: ", "file.txt"));
     }
 
-    void testRunAndQueryCommandAvailability() {
-
-    }
 
 }

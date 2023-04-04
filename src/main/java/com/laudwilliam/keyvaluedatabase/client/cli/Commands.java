@@ -2,7 +2,7 @@ package com.laudwilliam.keyvaluedatabase.client.cli;
 
 import com.laudwilliam.keyvaluedatabase.client.Client;
 import com.laudwilliam.keyvaluedatabase.client.language.QueryCommands;
-import com.laudwilliam.keyvaluedatabase.client.utils.FileManager;
+import com.laudwilliam.keyvaluedatabase.utils.FileManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.ShellComponent;
@@ -114,6 +114,8 @@ public class Commands {
         if (!StringUtils.hasText(inputFilePath))
             return "Please enter a valid command";
         boolean isInput = fileManger.isFile(inputFilePath);
+        if (!isInput)
+            return String.format("File not found %s: ", inputFilePath);
         if (StringUtils.hasText(outputFilePath) && fileManger.isFile(outputFilePath))
             return "Output file already exist";
         if (StringUtils.hasText(outputFilePath))
