@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "com.laudwilliam.database.save-location",
+      "type": "java.lang.String",
+      "description": "Description for com.laudwilliam.database.save-location."
+  }
+] }
